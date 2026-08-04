@@ -73,7 +73,17 @@
 
 ## 如何运行
 
+```bash
+# 1. 安装依赖(需要先装 uv:https://docs.astral.sh/uv/)
+uv sync
 
+# 2. 在项目根目录创建 .env 文件,填入两个 key:
+#    MOONSHOT_API_KEY=xxx        # Kimi,聊天模型(platform.moonshot.cn)
+#    SILICONFLOW_API_KEY=xxx     # 硅基流动,embedding(siliconflow.cn,有免费额度)
+
+# 3. 运行当前完全体
+uv run 22_persistent_agent.py
+```
 
 ## 下一步计划
 
