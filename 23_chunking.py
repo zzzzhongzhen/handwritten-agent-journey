@@ -1,7 +1,7 @@
-from openai import OpenAI
 import os
-import httpx
 import json
+import httpx
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,16 +43,6 @@ TOOL_FUNCTIONS = {
     "celsius_to_fahrenheit": celsius_to_fahrenheit,
 }
 
-KNOWLEDGE = [
-    "服务器信息:团队测试服务器 IP 是 192.168.31.77,SSH 端口 2222,管理员是老王。",
-    "请假流程:提前一天在钉钉上提交申请,抄送直属领导,病假需要补交证明。",
-    "byron 的学习计划:每周一二晚各2小时、周三四晚各1小时、周末3小时,目标是6个月转型 Agent 工程师。",
-    "项目排期:App 3.2 版本 8 月 15 日提审,3.3 版本预计 9 月底,新功能冻结日是每月 1 号。",
-    "报销规则:打车费需要行程单,单笔超过 500 元要提前审批,每月 5 号前提交上月报销。",
-    "苹果最新的发布会是在9月18号,预计将会发布iPhone标准版系列和iPad系列",
-    "今年是一个大雨天,连续下雨,农民种的苹果收成不好,才2块"
-]
-
 # ============================================================
 # 2. 余弦相似度:两个向量"方向"有多一致(越近 1 越相似)
 #    全是你会的零件:zip 并排遍历、生成器求和、** 0.5 开方
@@ -64,6 +54,13 @@ def cos_sim(a: list, b: list) -> float:
     return dot / (norm_a * norm_b)
 
 HISTORY_FILE = "chat_history.json"
+
+SYSTEM_PROMPT = """你是学习助手,参考资料库是用户的 Agent 开发学习笔记(Agent Loop、工具调用、RAG、Python 等)。
+回答时遵守以下规则:
+1. 知识类问题:优先依据本次提供的参考资料回答;资料里没有的,如实说"资料里没有这个信息",不要编造。
+2. 用户在对话中告诉你的信息(名字、偏好、之前聊过的内容):属于对话记忆,可以正常记住和使用。
+3. 需要实时数据(天气、温度)或计算时,使用工具。
+4. 以上来源都没有的信息,如实说不知道。"""
 
 class RAGChatAgent:
     """这是一个向量检索增强的agent系统"""
@@ -85,14 +82,10 @@ class RAGChatAgent:
                 try:
                     self.messages = json.load(f)
                 except json.JSONDecodeError as e:
-                    self.messages = []
-                    print(f"读json文件失败{e}")
+                    print(f"历史文件已损坏,重新开始: {e}")
+                    self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         else:
-            self.messages = [{"role": "system", "content": """你是团队助手。回答时遵守以下规则:
-  1. 涉及公司制度、项目信息等资料类问题:优先依据提供的参考资料;资料里没有的,如实说"资料里没有这个信息",不要编造。
-  2. 用户在对话中告诉你的信息(名字、偏好、之前聊过的内容):属于对话记忆,可以正常记住和使用。
-  3. 需要实时数据(天气、温度)或计算时,使用工具。
-  4. 以上来源都没有的信息,如实说不知道。"""}]
+            self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
         self.max_turns = max_turns
         # 实例 1:管聊天(Kimi)
@@ -105,17 +98,36 @@ class RAGChatAgent:
             api_key=os.environ.get("SILICONFLOW_API_KEY"),
             base_url="https://api.siliconflow.cn/v1",
         )
-        self.doc_vecs = [(self.embed(doc), doc) for doc in KNOWLEDGE]
+        self.doc_vecs = self.chunk_text()
+
+    def chunk_text(self) -> list:
+        with open("第2个月复习-AgentLoop.md", "r", encoding="utf-8") as f:
+            content = f.read()
+            split_str = content.split("\n##")
+            result = []
+            for s_str in split_str:
+                parts = s_str.split("\n", 1)
+                title = parts[0].strip()           # 标题行
+                body = parts[1] if len(parts) > 1 else "" #正文(防某段没有换行,兜一下)
+                if len(s_str) > 300:
+                    l_chunks = [f"{title}\n{para}" for para in body.split("\n\n") if len(para) > 30]  
+                    result.extend(l_chunks)
+                else:
+                    result.append(f"{title}\n{body}")
+            
+            doc_vecs = [(self.embed(res), res) for res in result]
+            return doc_vecs
 
     def retrieve(self, user_input) -> str:
         """向量检索,找出最符合用户输入问题的资料"""
         i_vec = self.embed(user_input)
         scored = [(cos_sim(i_vec, d_vec[0]), d_vec[1]) for d_vec in self.doc_vecs]
         scored.sort(key=lambda pair: pair[0], reverse=True)
+        for score, doc in scored[:3]:
+            print(f"  {score:.4f}  {doc[:30]}...")
+        print(f"\n🏆 最相关:{scored[0][1][:30]}...")
 
-        print(f"\n🏆 最相关:{scored[0][1][:40]}...")
-
-        content = scored[0][1]
+        content = "\n\n".join(doc for _, doc in scored[:3])
         return content
     
     def chat(self, user_input) -> str:
@@ -162,7 +174,7 @@ class RAGChatAgent:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
-    agent = RAGChatAgent(max_turns=2)
+    agent = RAGChatAgent(max_turns=10)
     while True:
         user_input = input("👨🏻：")
         if user_input.lower() in ("quit", "exit", "退出"):
