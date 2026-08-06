@@ -9,7 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# 密钥文件,绝不提交(泄露=别人能花你的钱)
 .env
 
 chat_history.json

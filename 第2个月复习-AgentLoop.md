@@ -156,7 +156,7 @@ while True:                    # 外层:聊天,接收每句输入
 3. 删掉内层循环 → 调完工具不回答、直接等下一句(循环 = 让模型来回处理完)。
 4. 错误三来源:编辑器(静态、红线)/ 本地 Python(运行时 Traceback、XxxError)/ 远程服务器(有 HTTP 码如 400,服务器入口校验)。
 5. 流式下 `.choices[0].message` 取不到(要遍历 chunk 的 delta)。
-
+6. SDK 消息对象不能直接 json.dump → 用model_dump(exclude_none=True),跨序列化边界要转纯数据
 ---
 
 ## 十二、你造出来的东西
