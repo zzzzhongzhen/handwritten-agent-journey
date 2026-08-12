@@ -14,3 +14,6 @@ wheels/
 chat_history.json
 weather.json
 note.txt
+# Chroma 向量库(本地缓存,不进仓库)
+chroma_db/
+chroma_demo_db/

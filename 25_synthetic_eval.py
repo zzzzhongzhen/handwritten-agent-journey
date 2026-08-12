@@ -150,15 +150,13 @@ if __name__ == "__main__":
 
     print("\n========== 参数对比实验 ==========")
     results = []
-    for threshold in (300, 800, 20):
+    for threshold in (300, 700, 600):
         chunks = chunk_text(threshold)
         print(f"⏳ 阈值={threshold}:{len(chunks)} 块,计算向量中...")
         doc_vecs = [(embed(c), c) for c in chunks]          # 每种切法只算一次
         ranks = eval_config(eval_set, q_vecs, doc_vecs)     # 只算一次名次
-        results.append((threshold, hit_at(ranks, 1), hit_at(ranks, 3), mrr(ranks)))
+        results.append((threshold, hit_at(ranks, 1), hit_at(ranks, 3), hit_at(ranks, 4), mrr(ranks)))
 
-    print(f"\n{'阈值':<8}{'hit@1':<10}{'hit@3':<10}MRR")
-    for threshold, h1, h3, m in results:
-        print(f"{threshold:<8}{f'{h1}/{n}':<10}{f'{h3}/{n}':<10}{m:.3f}")
-    for threshold, top_k, hit1, hitk in results:
-        print(f"阈值{threshold:<13} {hit1}/{n:<8} {hitk}/{n}")
+    print(f"\n{'阈值':<8}{'hit@1':<10}{'hit@3':<10}{'hit@4':<10}MRR")
+    for threshold, h1, h3, h4, m in results:
+        print(f"阈值{threshold:<6}{f'{h1}/{n}':<10}{f'{h3}/{n}':<10}{f'{h4}/{n}':<10}{m:.3f}")
