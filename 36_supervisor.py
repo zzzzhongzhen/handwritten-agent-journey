@@ -25,9 +25,11 @@ from langgraph.prebuilt import ToolNode
 
 load_dotenv()
 
+MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"
+
 # ── 脚手架:共享模型 + embedding + Chroma(你都写过)──
-llm = ChatOpenAI(model="kimi-k2.6", base_url="https://api.moonshot.cn/v1",
-                 api_key=os.environ.get("MOONSHOT_API_KEY"), temperature=1, max_retries=5)
+llm = ChatOpenAI(model=MODEL, base_url="http://localhost:11434/v1",
+                 api_key="ollama", temperature=1, max_retries=5)
 silicon = OpenAI(api_key=os.environ.get("SILICONFLOW_API_KEY"),
                  base_url="https://api.siliconflow.cn/v1")
 
@@ -121,7 +123,6 @@ app = graph.compile()
 SUPERVISOR_PROMPT = """你是调度者。你自己不直接回答,而是把任务分派给合适的下属:
 - research_agent:回答学习笔记里的知识问题
 - calc_weather_agent:算数、查天气、温度换算
-一次只派给一个下属,等它返回结果后,再决定要不要派下一个
 拿到下属返回的结果后,你综合成最终答案回复用户。"""
 
 if __name__ == "__main__":
