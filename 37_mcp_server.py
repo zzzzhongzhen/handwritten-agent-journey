@@ -18,7 +18,7 @@ CITIES = {"北京": (39.90, 116.41), "上海": (31.23, 121.47), "深圳": (22.54
 # ── 该你写①:把下面两个函数「暴露」成 MCP 工具 ──
 # 提示:在函数上面加装饰器 @server.tool()
 #   docstring 依旧是"给模型/客户端看的说明"(MCP 会把它作为工具描述广播出去)
-____
+@server.tool()
 def get_weather(city: str) -> str:
     """查询某个城市的当前温度(摄氏度)。要知道天气/温度时用。"""
     if city not in CITIES:
@@ -29,7 +29,7 @@ def get_weather(city: str) -> str:
     return f"{city}当前温度为:{r.json()['current_weather']['temperature']}°C"
 
 
-____
+@server.tool()
 def calculate(expression: str) -> str:
     """计算数学表达式并返回精确结果。要算数时用。"""
     return str(eval(expression))
@@ -39,4 +39,4 @@ if __name__ == "__main__":
     # ── 该你写②:选一种传输方式启动 ──
     # 提示:本地把 server 当子进程跑、用标准输入输出通信 → "stdio"
     #      (另两种是 "sse" / "streamable-http",那是"作为网络服务"跑,远程多客户端用)
-    server.run(transport=____)
+    server.run(transport="stdio")
