@@ -70,6 +70,14 @@
   - **"Context" = 模型需要的外部一切**,不是只指上下文窗口文字。
   - 握手要版本协商;工具的 inputSchema 由函数签名自动生成;跨进程 tools/call。
 - **本地部署**:Ollama(运行器)/ 模型(Qwen 等)/ openai(客户端)**三层**;只改 base_url/api_key/model 就切本地。**量化**(4bit 压缩,GGUF);OpenAI 兼容 API。**模型不自省运行时**(问它跑在本地还是云会瞎答=幻觉,要写进 system prompt)。本地 7B "够用不顶尖"。**量化有真实代价**:用评估集量出 hit@1/MRR 小降(13/15 持平、MRR 0.734→0.701)。
+- **llama.cpp / Ollama / GGUF 的关系(面试常问"本地怎么跑起来的")**:
+  - **llama.cpp** = 用 C/C++ 写的**推理引擎**(Georgi Gerganov,2023)。不要 Python/CUDA,能用 CPU + Apple Metal GPU 跑,配合量化让大模型能塞进普通电脑内存。**点燃了本地大模型浪潮**。名字来自最初跑 Meta LLaMA,现通吃各家。
+  - **Ollama = llama.cpp 的友好外壳**(内部包着它),额外加:模型下载管理 + OpenAI 兼容 API + 对话模板。LM Studio 同类。**Ollama 不是引擎,引擎是 llama.cpp**。
+  - **GGUF** = llama.cpp 家的模型格式(量化权重文件)。
+  - 层级:`你的代码 → Ollama(壳)→ llama.cpp(引擎,attention/采样在这真跑)→ 读 GGUF`。
+  - **推论(踩过)**:Ollama 能跑什么架构,上限由它包的 llama.cpp 决定 → 新模型(如 Qwen3.8)要等 llama.cpp 支持,Ollama 才跟上;架构太新会报 `unknown model architecture`。
+  - **任何 GGUF 进 Ollama 的三条路**:①registry tag(ollama.com / hf.co / **modelscope.cn** 国内首选)②社区打包 tag(模板已内置)③手动 Modelfile `FROM ./x.gguf`(最可控但要自己配对话模板,否则输出乱)。
+  - ⭐**端侧关联**:llama.cpp 系能跑在手机(iOS/安卓),是"端侧 AI"地基之一;苹果原生等价物 = **MLX / Core ML**。做端侧 Agent 不是 llama.cpp 系就是 MLX 系。
 
 ---
 
@@ -127,4 +135,6 @@
 - **怎么做限流和重试?** 区分瞬时(429/503,重试)vs 永久(400,不重试);指数退避+抖动;有副作用的动作加幂等键。
 - **MCP 是什么?** 让工具/数据以标准协议(JSON-RPC)暴露,任何客户端可发现调用;工具从"焊在某 agent 里"变成"谁都能连的服务"。
 - **LangChain 和 LangGraph 区别?** 前者是零件库,后者是编排层(图/状态/循环/条件边)。
+- **本地大模型怎么跑起来的 / Ollama 和 llama.cpp 什么关系?** llama.cpp 是 C++ 推理引擎(真干活),Ollama 是它的外壳(加管理+API+模板);GGUF 是模型格式。Ollama 能跑什么由底层 llama.cpp 决定。
+- **为什么本地能跑大模型?** llama.cpp 纯 C++ 无 CUDA + 量化(4bit)压缩权重,CPU/Apple GPU 就能跑;端侧手机同理(iOS 用 MLX/Core ML)。
 - **讲个你调过的 bug?** → 见 Part F,任选(序列化边界 / 原子写入 / RRF 被返回契约污染,都能讲出根因)。
