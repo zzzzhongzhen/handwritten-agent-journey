@@ -68,6 +68,28 @@
 
 ---
 
+## Part 4 · 架构格局(现在的模型 vs 原始 Transformer)
+
+**一句话**:骨架都是 Transformer(attention 是共同心脏),但 2017 原版的器官换了一批。
+
+**为什么 Transformer 赢**:最能"堆"——并行 + scaling law 一直没失灵(呼应"bitter lesson":简单结构+堆算力 > 精巧设计)。
+
+**原版 → 现在主流(面试问"和原始 Transformer 区别"就答这张表)**
+
+| 2017 原版 | 现在主流 |
+|---|---|
+| 位置编码 正弦 sin/cos | **RoPE 旋转位置编码** |
+| 归一化 LayerNorm | **RMSNorm** |
+| 前馈 普通 FFN | **SwiGLU** |
+| 注意力 MHA 多头 | **GQA/MQA**(分组/多查询注意力,省显存) |
+| 全参数都激活 | **MoE 专家混合**(每次只激活一部分参数) |
+
+**挑战者(冲着 attention 的 O(n²) 长序列贵来的)**:Mamba/SSM(状态空间,线性复杂度)、RWKV(像 RNN 能并行训)、线性注意力;有的搞混合(Transformer+Mamba)。**但截至 2026-01 旗舰前沿仍主力 Transformer,挑战者未夺位。**(前沿有 7 月盲区,别只信一处)
+
+**attention 的核心软肋**:成本随序列长度**平方**增长(O(n²))→ 长上下文贵的根因 → 上面挑战者都在攻这个点。
+
+---
+
 ## 高频面试题速答
 
 - **Transformer 核心?** Self-attention:每词点积算相关度、加权融合;比 RNN 能并行、看长依赖。
@@ -77,3 +99,7 @@
 - **预训练 vs 微调?** 预训练学知识(贵、全网、预测下一词);微调学行为(便宜、问答对、同样损失)。
 - **SFT vs RLHF?** SFT 教"会回答"(监督问答对);RLHF/DPO 教"答得好"(人类偏好排序)。
 - **微调能给模型新知识吗?** 基本不能,知识在预训练;新知识用 RAG。
+- **现在的模型都是 Transformer 吗?** 主流几乎全是(attention 是共同心脏),但器官换过:RoPE/RMSNorm/SwiGLU/GQA/MoE。挑战者 Mamba/SSM 冲 O(n²) 来但未夺位。
+- **和原始 Transformer 区别?** 位置编码 sin/cos→RoPE、LayerNorm→RMSNorm、FFN→SwiGLU、MHA→GQA/MQA、加了 MoE。
+- **attention 的缺点?** O(n²) 随序列长度平方增长 → 长上下文贵;这是 Mamba 等新架构要解决的。
+- **位置编码为什么需要?** 纯 attention 不管顺序("猫追老鼠"="老鼠追猫"),要靠位置编码把顺序补回来。
