@@ -137,4 +137,6 @@
 - **LangChain 和 LangGraph 区别?** 前者是零件库,后者是编排层(图/状态/循环/条件边)。
 - **本地大模型怎么跑起来的 / Ollama 和 llama.cpp 什么关系?** llama.cpp 是 C++ 推理引擎(真干活),Ollama 是它的外壳(加管理+API+模板);GGUF 是模型格式。Ollama 能跑什么由底层 llama.cpp 决定。
 - **为什么本地能跑大模型?** llama.cpp 纯 C++ 无 CUDA + 量化(4bit)压缩权重,CPU/Apple GPU 就能跑;端侧手机同理(iOS 用 MLX/Core ML)。
+- **代码怎么做 AST 感知切块 / tree-sitter 是标准吗?** 是事实标准:GitHub 代码导航、Neovim/Zed/Emacs、以及 LangChain/LlamaIndex 代码分割器、aider 都用它。优点:快+增量、容错(能解析残缺代码)、100+语言统一 API(配可插拔)。做法:parse 成语法树→遍历取 function/class 节点→按节点真实边界切块(带行号/parent),比正则(瞎猜、切巨块/碎块)强。
+- **tree-sitter vs LSP 区别?** tree-sitter 只给**语法**(结构:有哪些函数/在哪行);LSP/SCIP/ctags 给**语义**(类型、跨文件引用、跳定义)。切块/高亮用 tree-sitter;要"跟调用链/找引用"(agentic 导航)得上 LSP。原生解析器(SwiftSyntax/Python ast)单语言最精确但不统一。
 - **讲个你调过的 bug?** → 见 Part F,任选(序列化边界 / 原子写入 / RRF 被返回契约污染,都能讲出根因)。
